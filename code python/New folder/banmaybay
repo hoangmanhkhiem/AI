@@ -1,0 +1,237 @@
+import pygame
+from pygame import mixer
+import random
+from random import randint, choice
+import time
+import math
+
+pygame.init()
+
+while True:
+    # window
+    win = pygame.display.set_mode((500, 300))
+
+    # background img
+    background_img = pygame.image.load('B1.jfif')
+    background_img = pygame.transform.rotate(background_img, 90)
+    background_img = pygame.transform.scale(background_img, (1080, 1920))
+
+    # player
+    player = pygame.image.load('Green.PNG')
+    player = pygame.transform.scale(player, (150, 150))
+    playerX = 540 - 75
+    playerY = 1600 - 75
+
+    # player bullet
+    Bullets = []
+
+
+    class PB:
+        pb_img = pygame.transform.scale(pygame.image.load('Pfire.png'), (20, 60))
+
+        def __init__(self):
+            self.pb_x = playerX
+            self.pb_y = playerY
+            self.c_time = time.time()
+
+
+    # enemy bul
+    enim_bullets = []
+
+
+    class E_bullet:
+        bullet_img = pygame.transform.scale(pygame.image.load('bomb.png'), (50, 50))
+
+        def __init__(self):
+            n = choice(enimies)
+            self.x = n.E_x
+            self.y = n.E_y
+            self.inc_y = n.speed + 5
+            self.c_time = time.time()
+            if abs(playerX - self.x) <= 100:
+                inc_x = 0
+            elif playerX > self.x:
+                inc_x = 2
+            elif playerX < self.x:
+                inc_x = -2
+            self.inc_x = inc_x
+
+        # enemy
+
+        # background
+        backgr = pygame.transform.scale(pygame.image.load('B2.jpeg'), (1100, 1700))
+        mixer.music.load('3.ogg')
+        mixer.music.play(-1)
+
+
+    class Enemy:
+        def __init__(self):
+            self.speed = randint(0, 5)
+            self.E_x = choice([-100, 1200])
+            self.E_y = randint(0, 300)
+            self.en_speed_x = choice([-1, -2, -3, -4, -5, 5, 4, 3, 2, 1])
+            img = pygame.transform.scale(pygame.image.load(choice(['Enemy.png', 'Brown.PNG', 'Blue.PNG'])), (100, 100))
+            self.img = pygame.transform.rotate(img, 180)
+
+
+    enimies = [Enemy()]
+
+    e_count = 1
+
+
+    # point
+    def point(x, y):
+        pygame.draw.circle(win, (255, 0, 0), (x, y), 10)
+
+
+    # distance
+
+    def dist(x, y, a, b):
+        dis = math.sqrt((x - a) ** 2 + (y - b) ** 2)
+        return dis
+
+
+    def fire_s():
+        bullet_s = mixer.Sound('Fire.mp3')
+        bullet_s.play()
+
+
+    # write
+    def printer(size, st, color, x, y):
+        font = pygame.font.Font('freesansbold.ttf', size)
+        sc = font.render(st, True, color)
+        win.blit(sc, (x, y))
+
+
+    run = True
+    level = 1
+    score = 0
+    player_life = 5
+    score_up = [50, 100, 150, 200]
+    bul_time = .5
+    # main loop
+    while run:
+        win.fill((255, 255, 255))
+        win.blit(background_img, (0, 0))
+        printer(70, 'Lives : ', (0, 255, 255), 700, 1800)
+        printer(100, str(player_life), (100, 255, 100), 950, 1780)
+        # enim fir
+        if not len(enim_bullets):
+            enim_bullets.append(E_bullet())
+        elif time.time() - enim_bullets[-1].c_time >= 1:
+            enim_bullets.append(E_bullet())
+        for j, i in enumerate(enim_bullets):
+            win.blit(i.bullet_img, (i.x + 25, i.y))
+            i.y += i.inc_y
+            i.x += i.inc_x
+            if dist(i.x, i.y, playerX + 50, playerY + 75) <= 75:
+                player_life -= 1
+                mixer.Sound('Explo.mp3').play()
+                if len(enim_bullets):
+                    enim_bullets.pop(j)
+                if not player_life:
+                    run = False
+            elif i.y >= 1900:
+                if len(enim_bullets):
+                    enim_bullets.pop(j)
+        # creat enim
+        if e_count < level + 5:
+            enimies.append(Enemy())
+            e_count += 1
+        for j, i in enumerate(enimies):
+            i.E_y += i.speed
+            win.blit(i.img, (i.E_x, i.E_y))
+            if i.E_x <= 0:
+                i.en_speed_x = choice([1, 2, 3, 4, 5])
+            elif i.E_x >= 1050:
+                i.en_speed_x = choice([-1, -2, -3, -4, -5])
+            i.E_x += i.en_speed_x
+            if dist(i.E_x, i.E_y, playerX + 50, playerY + 75) <= 50:
+                enimies.pop(j)
+                e_count -= 1
+                mixer.Sound('Explo.mp3').play()
+                player_life -= 1
+                if player_life == 0:
+                    run = False
+            if i.E_y >= 1920:
+                e_count -= 1
+                if len(enimies):
+                    enimies.pop(j)
+                continue
+
+        # mouse point
+        x, y = pygame.mouse.get_pos()
+        # set player Pos
+        if dist(playerX + 75, playerY + 75, x, y) < 250:
+            playerX, playerY = x - 75, y - 150
+            if playerY >= 1600:
+                playerY = 1600
+
+        # player fire
+        if not len(Bullets):
+            Bullets.append(PB())
+        elif (time.time() - Bullets[-1].c_time) >= bul_time:
+            Bullets.append(PB())
+            fire_s()
+
+        for j, i in enumerate(Bullets):
+            win.blit(i.pb_img, (i.pb_x + 15, i.pb_y))
+            win.blit(i.pb_img, (i.pb_x + 115, i.pb_y))
+
+            i.pb_y -= 20
+            if i.pb_y <= 0 and len(Bullets):
+                Bullets.pop(j)
+            # check colusion
+            for e_ind, enemy in enumerate(enimies):
+                if dist(enemy.E_x, enemy.E_y, i.pb_x - 50, i.pb_y) <= 50 or dist(enemy.E_x, enemy.E_y, i.pb_x + 50,
+                                                                                 i.pb_y) <= 50:
+                    if len(Bullets) > 0:
+                        Bullets.pop(j)
+                        if len(enimies):
+                            enimies.pop(e_ind)
+                        score += 1
+                        e_count -= 1
+                        if score in score_up:
+                            level += 5
+                            bul_time -= .1
+
+        win.blit(player, (playerX, playerY))
+        printer(70, 'Score : ', (0, 255, 255), 30, 1800)
+        printer(100, str(score), (100, 250, 255), 300, 1780)
+        pygame.display.update()
+    mixer.Sound('Explo.mp3').play()
+
+
+    def desi(color, x, y, wi, he, s):
+        pygame.draw.rect(win, color, (x, y, wi, he), s, 100)
+
+
+    while True:
+        x, y = pygame.mouse.get_pos()
+        win.blit(background_img, (0, 0))
+        pygame.draw.rect(win, (200, 215, 10), (190, 675, 700, 150), 70, 100)
+        printer(100, 'Game Over', (0, 5, 0), 270, 700)
+        pygame.draw.rect(win, (200, 215, 10), (170, 665, 740, 170), 7, 100)
+        pygame.draw.rect(win, (0, 255, 255), (170, 750, 740, 200), 2, 100)
+        printer(70, 'Your score : ' + str(score), (0, 255, 255), 270, 850)
+        printer(90, 'Retry', (0, 255, 255), 200, 1200)
+        desi((255, 255, 255), 140, 1185, 350, 120, 5)
+        printer(90, 'Exit', (255, 135, 125), 700, 1200)
+        desi((255, 255, 255), 620, 1185, 350, 120, 5)
+        if dist(x, y, 315, 1245) <= 180:
+            x = 1
+            printer(90, 'Retry', (225, 200, 155), 200, 1200)
+            desi((200, 255, 25), 140, 1185, 350, 120, 5)
+            break
+        elif dist(x, y, 620 + 175, 1245) <= 180:
+            x = 0
+            printer(90, 'Exit', (200, 125, 225), 700, 1200)
+            desi((200, 255, 25), 620, 1185, 350, 120, 5)
+            break
+        pygame.display.update()
+    pygame.display.update()
+    time.sleep(.5)
+    if x == 0:
+        break
+    elif x == 1:
+        run = True
