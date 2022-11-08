@@ -1,1 +1,2 @@
 # AI
+MỘT SỐ SẢN PHẨM QUÁ KHỨ TỪNG CODE
